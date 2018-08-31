@@ -2,45 +2,130 @@
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+
 public class GameManager : MonoBehaviour {
-	public GameObject gameUI;
-	private FBScirpt fbScirpt;
-	private Text scoreText;
-	public float timeScore;
-	private GridScript gridScript;
+    private static GameManager _instance = null;
+    public static GameManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<GameManager>();
+                if (_instance == null)
+                {
+                    GameObject go = new GameObject();
+                    _instance = go.AddComponent<GameManager>();
+                    go.name = "GameManager";
+                }
+            }
+            return _instance;
+        }
+    }
+
+    [Header("Loading")]
+    [SerializeField] private GameObject loadingPanel;
+    [SerializeField] private Slider loadingSlider;
+
+    [Header("MainMenu")]
+    [SerializeField] private GameObject mainMenuPanel;
+
+    [Header("GamePanel")]
+    [SerializeField] private GameObject gamePanel;
+    [SerializeField] private Text gameplayScoreText;
+
+    [Header("GameOverPanel")]
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private Text gameoverScoreText;
+
+    private float timeScore;
+	private GridManager gridManager;
+    private bool isPlaying;
+
 	// Use this for initialization
 	void Start () {
-		gridScript = GetComponent<GridScript>();
-		scoreText = gameUI.transform.GetChild(0).transform.GetChild(0).GetComponentInChildren<Text> ();
+        ToggleLoading(false);
+        ToggleMainMenu(false);
+        ToggleGamePanel(false);
+        ToggleGameOverPanel(false);
+
+        gridManager = GetComponent<GridManager>();
+
+        Loading();
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if (gridScript.enabled==true) {
+		if (isPlaying) {
 			timeScore += Time.deltaTime;
-		}
-		if (gridScript.currentNumber > gridScript.maxNumber) {
+            gameplayScoreText.text = "Time : " + timeScore.ToString("0.00");
+        }
+
+		if (gridManager.currentNumber > gridManager.maxNumber && isPlaying) {
 			GameFinish ();
 		}
 	}
 
-	public void GameFinish(){
-		gameUI.transform.GetChild (0).gameObject.SetActive (true); //panelGameOver enable
-		scoreText.text = "Time : "+timeScore.ToString("0.00");
+    #region UI Panel
+    public void Loading() {
+        StartCoroutine(LoadingCoroutine());
+    }
 
-		fbScirpt = GetComponent<FBScirpt> ();
-		fbScirpt.SetScore ();
-		Time.timeScale = 0;
-	}
+    IEnumerator LoadingCoroutine() {
+        ToggleLoading(true);
 
-	public void StartGame(){
-		gameUI.transform.GetChild (1).gameObject.SetActive (false);
-		gridScript.enabled = true;
+        yield return new WaitUntil(() => FacebookManager.Instance.GetIsLoggedIn());
+
+        while (loadingSlider.value < 1)
+        {
+            loadingSlider.value += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForEndOfFrame();
+
+        ToggleLoading(false);
+
+        ToggleMainMenu(true);
+    }
+
+    public void ToggleLoading(bool enabled) {
+        loadingPanel.SetActive(enabled);
+    }
+
+    public void ToggleMainMenu(bool enabled) {
+        mainMenuPanel.SetActive(enabled);
+    }
+
+    public void ToggleGamePanel(bool enabled)
+    {
+        gamePanel.SetActive(enabled);
+    }
+
+    public void ToggleGameOverPanel(bool enabled)
+    {
+        gameOverPanel.SetActive(enabled);
+    }
+    #endregion
+    public void StartGame() {
+        timeScore = 0;
+        ToggleMainMenu(false);
+        ToggleGamePanel(true);
+        ToggleGameOverPanel(false);
+        isPlaying = true;
+    }
+
+    public void GameFinish(){
+        ToggleGameOverPanel(true);
+        isPlaying = false;
+        gameoverScoreText.text = "Time : "+timeScore.ToString("0.00");
+
+		FacebookManager.Instance.SetScore (timeScore);
 	}
 
 	public void Restart(){
-		Time.timeScale = 1;
-		SceneManager.LoadScene (0);
+        gridManager.InitGrid();
+        StartGame();
+    }
 
-	}
 }

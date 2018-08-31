@@ -3,12 +3,30 @@ using System.Collections;
 using Facebook.Unity;
 using System.Collections.Generic;
 using UnityEngine.UI;
-public class FBScirpt : MonoBehaviour {
 
-	public GameObject startButton;
-	public GameObject loginButton;
-	public Text alertText;
-	public Image profilePic;
+public class FacebookManager : MonoBehaviour {
+    private static FacebookManager _instance = null;
+    public static FacebookManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<FacebookManager>();
+                if (_instance == null)
+                {
+                    GameObject go = new GameObject();
+                    _instance = go.AddComponent<FacebookManager>();
+                    go.name = "FacebookManager";
+                }
+            }
+            return _instance;
+        }
+    }
+
+    [SerializeField] private Text usernameText;
+    [SerializeField] private Image profilePic;
+
 	// Use this for initialization
 	void Awake () {
 		if (!FB.IsInitialized) {
@@ -21,7 +39,8 @@ public class FBScirpt : MonoBehaviour {
 	private void InitCallback(){
 		if (FB.IsInitialized) {
 			FB.ActivateApp ();
-			Debug.Log ("Successful init fb sdk");
+            FBLogin();
+            Debug.Log ("Successful init fb sdk");
 		} else {
 			Debug.Log ("Fail");
 		}
@@ -50,45 +69,44 @@ public class FBScirpt : MonoBehaviour {
 				Debug.Log (perm);
 			}
 
-			ButtonSetUp (FB.IsLoggedIn);
+			SetupLoggedIn (FB.IsLoggedIn);
 		} else
 			Debug.Log ("User cancelled login");
 	}
 
-	void ButtonSetUp(bool isLoggedIn){
+	void SetupLoggedIn(bool isLoggedIn){
 		if (isLoggedIn) {
-			loginButton.SetActive (false);
-			startButton.SetActive(true);
-			profilePic.enabled = true;
 			FB.API ("/me?fields=first_name", HttpMethod.GET, DisplayUsername);
 			FB.API ("/me/picture?type=square&height=128&width=128", HttpMethod.GET, DisplayProfilePic);
-		}else{
-			loginButton.SetActive (true);
-			startButton.SetActive(false);
+		} else{
 			profilePic.enabled = false;
 		}
 	}
 
 	void DisplayUsername(IResult result){
 		if (result.Error == null) {
-			alertText.text = "Hi, " + result.ResultDictionary ["first_name"];
+			usernameText.text = result.ResultDictionary ["first_name"].ToString();
 		} else
 			Debug.Log (result.Error);
 	}
 
 	void DisplayProfilePic(IGraphResult result){
 		if (result.Texture != null) {
-			profilePic.sprite = Sprite.Create (result.Texture, new Rect (0, 0, 128, 128), new Vector2 ());
-		}
+            profilePic.enabled = true;
+            profilePic.sprite = Sprite.Create (result.Texture, new Rect (0, 0, 128, 128), new Vector2 ());
+        }
 	}
 
-	public void SetScore(){
+	public void SetScore(float score){
 		var scoreData = new Dictionary<string,string> ();
-		int score = (int)GetComponent<GameManager> ().timeScore;
 		scoreData ["score"] = score.ToString ();
 		FB.API ("/me/scores", HttpMethod.POST,delegate(IGraphResult result){
 			Debug.Log("score posted to the fb"+result.RawResult.ToString());
 		},scoreData);
 	}
+
+    public bool GetIsLoggedIn() {
+        return FB.IsLoggedIn;
+    }
 
 }
