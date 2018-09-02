@@ -30,6 +30,9 @@ public class GameManager : MonoBehaviour {
     [Header("MainMenu")]
     [SerializeField] private GameObject mainMenuPanel;
 
+    [Header("SelectMaxNumber")]
+    [SerializeField] private GameObject selectMaxNumberPanel;
+
     [Header("GamePanel")]
     [SerializeField] private GameObject gamePanel;
     [SerializeField] private Text gameplayScoreText;
@@ -41,11 +44,13 @@ public class GameManager : MonoBehaviour {
     private float timeScore;
 	private GridManager gridManager;
     private bool isPlaying;
+    private int currentGridMaxNumber;
 
 	// Use this for initialization
 	void Start () {
         ToggleLoading(false);
         ToggleMainMenu(false);
+        ToggleSelectMaxNumberPanel(false);
         ToggleGamePanel(false);
         ToggleGameOverPanel(false);
 
@@ -74,7 +79,7 @@ public class GameManager : MonoBehaviour {
     IEnumerator LoadingCoroutine() {
         ToggleLoading(true);
 
-        yield return new WaitUntil(() => FacebookManager.Instance.GetIsLoggedIn());
+        yield return new WaitUntil(() => FacebookManager.Instance.FBLoadingCompleted());
 
         while (loadingSlider.value < 1)
         {
@@ -97,6 +102,11 @@ public class GameManager : MonoBehaviour {
         mainMenuPanel.SetActive(enabled);
     }
 
+    public void ToggleSelectMaxNumberPanel(bool enabled)
+    {
+        selectMaxNumberPanel.SetActive(enabled);
+    }
+
     public void ToggleGamePanel(bool enabled)
     {
         gamePanel.SetActive(enabled);
@@ -107,12 +117,32 @@ public class GameManager : MonoBehaviour {
         gameOverPanel.SetActive(enabled);
     }
     #endregion
-    public void StartGame() {
+
+    public void ShowGamePanel() {
         timeScore = 0;
+        gameplayScoreText.text = "Time : " + timeScore.ToString("0.00");
         ToggleMainMenu(false);
+        ToggleSelectMaxNumberPanel(false);
         ToggleGamePanel(true);
         ToggleGameOverPanel(false);
+    }
+
+    public void ShowSelectMaxNumberPanel()
+    {
+        ToggleMainMenu(false);
+        ToggleGamePanel(false);
+        ToggleSelectMaxNumberPanel(true);
+    }
+
+    public void SetGridMaxNumber(int _maxNumber) {
+        currentGridMaxNumber = _maxNumber;
+
+        StartCoroutine(SetGridCoroutine());
+    }
+
+        public void StartGame() {
         isPlaying = true;
+        gridManager.ToggleStartCubeNumber(true);
     }
 
     public void GameFinish(){
@@ -120,12 +150,19 @@ public class GameManager : MonoBehaviour {
         isPlaying = false;
         gameoverScoreText.text = "Time : "+timeScore.ToString("0.00");
 
-		FacebookManager.Instance.SetScore (timeScore);
+		FacebookManager.Instance.SetScore ((int)timeScore);
 	}
 
 	public void Restart(){
-        gridManager.InitGrid();
-        StartGame();
+        StartCoroutine(SetGridCoroutine());
+    }
+
+    IEnumerator SetGridCoroutine() {
+        gridManager.InitGridWithMaxNunber(currentGridMaxNumber);
+
+        yield return new WaitUntil(() => gridManager.IsInitComplete());
+
+        ShowGamePanel();
     }
 
 }

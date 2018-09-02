@@ -61,7 +61,7 @@ public class FacebookManager : MonoBehaviour {
 
 	private void AuthCallback (ILoginResult result){
 		if (FB.IsLoggedIn) {
-			var aToken = Facebook.Unity.AccessToken.CurrentAccessToken;
+			var aToken = AccessToken.CurrentAccessToken;
 
 			Debug.Log (aToken.UserId);
 
@@ -97,7 +97,7 @@ public class FacebookManager : MonoBehaviour {
         }
 	}
 
-	public void SetScore(float score){
+	public void SetScore(int score){
 		var scoreData = new Dictionary<string,string> ();
 		scoreData ["score"] = score.ToString ();
 		FB.API ("/me/scores", HttpMethod.POST,delegate(IGraphResult result){
@@ -105,8 +105,14 @@ public class FacebookManager : MonoBehaviour {
 		},scoreData);
 	}
 
-    public bool GetIsLoggedIn() {
-        return FB.IsLoggedIn;
+    public void GetScore() {
+        FB.API("/app/scores?fields=score", HttpMethod.GET, delegate (IGraphResult result) {
+            Debug.Log(result.RawResult);
+        });
+    }
+
+    public bool FBLoadingCompleted() {
+        return FB.IsLoggedIn && profilePic.sprite != null;
     }
 
 }

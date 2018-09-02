@@ -1,39 +1,74 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.EventSystems;
 
-public class Cube : MonoBehaviour {
-	public int cubeNumber;
-    private Color cudeColor;
-	private TextMesh cubeText;
-	private GridManager gridManager;
+public class Cube : MonoBehaviour, IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler {
 
-	// Use this for initialization
-	void Start () {
-		cubeText = GetComponentInChildren<TextMesh> ();
-		gridManager = GameObject.FindWithTag ("Grid").GetComponent<GridManager>();
+    [SerializeField] private TextMesh cubeText;
+    public int cubeNumber;
+    private GridManager gridManager;
 
-		//setCubeNumber
-		cubeNumber = gridManager.RandomNumber ();
+    // Use this for initialization
+    void Start()
+    {
+        gridManager = GameObject.FindWithTag("Grid").GetComponent<GridManager>();
 
-		//setCubeText
-		cubeText.text = "" + cubeNumber;
-	}
+        SetNumber(gridManager.RandomNumber());
+    }
 
-	void OnMouseDown(){
-		if (cubeNumber == gridManager.currentNumber) {
-			Destroy (gameObject);
-			gridManager.currentNumber += 1;
-			if (gridManager.cubeInGrid < gridManager.maxNumber) {
-				gridManager.cubeInGrid += 1;
-				gridManager.SpawnCube (gameObject);
-			}
-			if(gridManager.cubeInGrid == (25 % gridManager.maxNumber)+1)
-				gridManager.SetListValue();
-			
-		}
-		Debug.Log ("Current Number "+gridManager.currentNumber);
-		Debug.Log ("Cube In Grid "+gridManager.cubeInGrid);
-	}
-		
+    void SetNumber(int number)
+    {
+        //setCubeNumber
+        cubeNumber = number;
+  
+        //setCubeText
+        cubeText.text = "" + cubeNumber;
+    }
 
+    public void SetColor(Color cubeColor)
+    {
+        GetComponent<SpriteRenderer>().color = cubeColor;
+    }
+
+    public void ToggleText(bool enabled)
+    {
+        cubeText.gameObject.SetActive(enabled);
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (cubeNumber <= 1)
+        {
+            GameManager.Instance.StartGame();
+        }
+
+        if (cubeNumber == gridManager.currentNumber)
+        {
+            Destroy(gameObject);
+            gridManager.currentNumber += 1;
+            if (gridManager.cubeInGrid < gridManager.maxNumber)
+            {
+                gridManager.cubeInGrid += 1;
+                gridManager.SpawnCube(transform);
+            }
+
+            if (gridManager.cubeInGrid == (25 % gridManager.maxNumber) + 1)
+            {
+                gridManager.SetListValue();
+            }
+
+        }
+        Debug.Log("Current Number " + gridManager.currentNumber);
+        Debug.Log("Cube In Grid " + gridManager.cubeInGrid);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+       
+    }
 }
