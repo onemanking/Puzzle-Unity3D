@@ -131,6 +131,7 @@ public class GameManager : MonoBehaviour {
     {
         ToggleMainMenu(false);
         ToggleGamePanel(false);
+        ToggleGameOverPanel(false);
         ToggleSelectMaxNumberPanel(true);
     }
 
